@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.2
+name: Update Multiple Clients v.8.4
 
 on:
   push:
@@ -54,15 +54,14 @@ jobs:
                 IFS=':' read -r category cities <<< "$part"
                 IFS=',' read -ra CITIES <<< "$cities"
                 for city in "${CITIES[@]}"; do
-                  [ -n "$pattern" ] && pattern+="\\|"
-                  pattern+="($category.*$city\\|$city.*$category)"
+                  [ -n "$pattern" ] && pattern+="\n"
+                  pattern+="$city"
                 done
               done
             else
-              # Simple filter
               IFS=',' read -ra FILTER_PARTS <<< "$filter"
               for part in "${FILTER_PARTS[@]}"; do
-                [ -n "$pattern" ] && pattern+="\\|"
+                [ -n "$pattern" ] && pattern+="\n"
                 pattern+="$part"
               done
             fi
@@ -70,22 +69,46 @@ jobs:
             echo "$pattern"
           }
 
+          # Function to find files matching pattern
+          find_matching_files() {
+            local pattern="$1"
+            local files=""
+            
+            while IFS= read -r keyword; do
+              if [ -z "$files" ]; then
+                files=$(find . -type f -name "*.html" | xargs grep -l "$keyword" 2>/dev/null || true)
+              else
+                files=$(echo "$files" | xargs grep -l "$keyword" 2>/dev/null || true)
+              fi
+            done <<< "$pattern"
+            
+            echo "$files"
+          }
+
+          # First pass: collect all filters
+          declare -A all_filters
+          while IFS= read -r LINE; do
+            if [[ "$LINE" =~ \|[^|]*\|[^|]*\|[^|]*\|[^|]+$ ]]; then
+              FILTER=$(echo "$LINE" | awk -F'|' '{print $NF}' | xargs)
+              if [ -n "$FILTER" ]; then
+                all_filters["$FILTER"]=1
+              fi
+            fi
+          done < .clients
+
           # Function to process a single client
           process_client() {
             local LINE="$1"
             local CLIENT_NUM="$2"
 
-            # Initialize variables
             WAURL=""
             PHURL=""
             NAME=""
             PHONE=""
             FILTER=""
 
-            # Split using '|' and preserve spaces
             IFS='|' read -ra PARTS <<< "$LINE"
             
-            # Identify each part
             for PART in "${PARTS[@]}"; do
               TRIMMED_PART="$(echo "$PART" | xargs)"
               if [[ $TRIMMED_PART == https://* ]]; then
@@ -105,26 +128,43 @@ jobs:
 
             NEW_PHONE_NAME="${PHONE} (${NAME})"
 
-            echo "Processing Client $CLIENT_NUM:"
+            echo "Processing Client $CLIENT_NUM ($NAME):"
             echo "WAURL: $WAURL"
             echo "PHURL: $PHURL"
             echo "NAME: $NAME"
             echo "PHONE: $PHONE"
             echo "FILTER: $FILTER"
 
-            # Create a grep pattern from FILTER or use all HTML files if FILTER is empty
+            # Handle file selection based on FILTER
             if [ -n "$FILTER" ]; then
               FILTER_PATTERN=$(create_grep_pattern "$FILTER")
-              echo "Generated FILTER_PATTERN: $FILTER_PATTERN"
-              FILE_LIST=$(find . -name "*.html" -type f | grep -E "$FILTER_PATTERN")
+              echo "Generated FILTER_PATTERN:"
+              echo "$FILTER_PATTERN"
+              FILE_LIST=$(find_matching_files "$FILTER_PATTERN")
             else
-              FILE_LIST=$(find . -name "*.html" -type f)
+              # For clients without filter, exclude files matching other clients' filters
+              ALL_FILES=$(find . -type f -name "*.html")
+              FILE_LIST="$ALL_FILES"
+              
+              for f in "${!all_filters[@]}"; do
+                EXCLUDE_PATTERN=$(create_grep_pattern "$f")
+                EXCLUDE_FILES=$(find_matching_files "$EXCLUDE_PATTERN")
+                if [ -n "$EXCLUDE_FILES" ]; then
+                  FILE_LIST=$(comm -23 <(echo "$FILE_LIST" | sort) <(echo "$EXCLUDE_FILES" | sort))
+                fi
+              done
+            fi
+
+            # Check if FILE_LIST is empty
+            if [ -z "$FILE_LIST" ]; then
+              echo "No matching files found for Client $CLIENT_NUM ($NAME)"
+              return
             fi
 
             # Update files
             CHANGES_MADE=false
             while IFS= read -r file; do
-              echo "Attempting to extract information from file: $file"
+              echo "Processing file: $file"
               
               # Extract all necessary information
               OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4}( [0-9]{4})? \([^)]+\)/ {print $3; exit}' "$file")
@@ -181,20 +221,30 @@ jobs:
             done <<< "$FILE_LIST"
 
             if [ "$CHANGES_MADE" = true ]; then
-              echo "Changes were made for Client $CLIENT_NUM"
+              echo "Changes were made for Client $CLIENT_NUM ($NAME)"
             else
-              echo "No changes were necessary for Client $CLIENT_NUM"
+              echo "No changes were necessary for Client $CLIENT_NUM ($NAME)"
             fi
 
-            echo "Client $CLIENT_NUM processing complete."
             echo "----------------------------------------"
           }
 
-          # Read .clients file line by line
+          # Process clients with filters first, then those without filters
           CLIENT_NUM=1
+          # First process clients with filters
           while IFS= read -r LINE; do
-            process_client "$LINE" "$CLIENT_NUM"
-            ((CLIENT_NUM++))
+            if [[ "$LINE" =~ \|[^|]*\|[^|]*\|[^|]*\|[^|]+$ ]]; then
+              process_client "$LINE" "$CLIENT_NUM"
+              ((CLIENT_NUM++))
+            fi
+          done < .clients
+
+          # Then process clients without filters
+          while IFS= read -r LINE; do
+            if ! [[ "$LINE" =~ \|[^|]*\|[^|]*\|[^|]*\|[^|]+$ ]]; then
+              process_client "$LINE" "$CLIENT_NUM"
+              ((CLIENT_NUM++))
+            fi
           done < .clients
 
       - name: Commit and push changes
