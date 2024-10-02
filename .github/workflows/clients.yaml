@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.6
+name: Update Multiple Clients v.8.7
 
 on:
   push:
@@ -74,15 +74,16 @@ jobs:
             local pattern="$1"
             local grep_pattern=""
             
-            # Convert newline-separated keywords into a grep pattern with OR conditions
-            while IFS= read -r keyword; do
+            # Split the pattern by commas and create the grep pattern
+            IFS=',' read -ra KEYWORDS <<< "$pattern"
+            for keyword in "${KEYWORDS[@]}"; do
               if [ -n "$keyword" ]; then
                 [ -n "$grep_pattern" ] && grep_pattern+="\|"
                 # Escape dots and other special characters in the keyword
                 escaped_keyword=$(echo "$keyword" | sed 's/[.[\*^$()+?{|]/\\&/g')
                 grep_pattern+=".*$escaped_keyword.*"
               fi
-            done <<< "$pattern"
+            done
             
             if [ -n "$grep_pattern" ]; then
               echo "Using grep pattern: $grep_pattern" >&2
