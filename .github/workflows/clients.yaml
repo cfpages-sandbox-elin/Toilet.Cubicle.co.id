@@ -80,8 +80,14 @@ jobs:
               grep_pattern+="$keyword"
             done <<< "$pattern"
             
-            # Use -E for extended regex and combine all keywords with OR
-            find . -type f -name "*.html" | xargs grep -l -E "$grep_pattern" 2>/dev/null || true
+            if [ -n "$grep_pattern" ]; then
+              echo "Using grep pattern: $grep_pattern" >&2
+              # Use -E for extended regex and combine all keywords with OR
+              find . -type f -name "*.html" | xargs grep -l -E "$grep_pattern" 2>/dev/null || true
+            else
+              echo "No valid grep pattern created" >&2
+              return 1
+            fi
           }
 
           # First pass: collect all filters
