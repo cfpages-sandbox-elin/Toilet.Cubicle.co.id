@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.5
+name: Update Multiple Clients v.8.6
 
 on:
   push:
@@ -76,14 +76,17 @@ jobs:
             
             # Convert newline-separated keywords into a grep pattern with OR conditions
             while IFS= read -r keyword; do
-              [ -n "$grep_pattern" ] && grep_pattern+="\|"
-              grep_pattern+="$keyword"
+              if [ -n "$keyword" ]; then
+                [ -n "$grep_pattern" ] && grep_pattern+="\|"
+                # Escape dots and other special characters in the keyword
+                escaped_keyword=$(echo "$keyword" | sed 's/[.[\*^$()+?{|]/\\&/g')
+                grep_pattern+=".*$escaped_keyword.*"
+              fi
             done <<< "$pattern"
             
             if [ -n "$grep_pattern" ]; then
               echo "Using grep pattern: $grep_pattern" >&2
-              # Use -E for extended regex and combine all keywords with OR
-              find . -type f -name "*.html" | xargs grep -l -E "$grep_pattern" 2>/dev/null || true
+              find . -type f -name "*.html" | grep -E "$grep_pattern" || true
             else
               echo "No valid grep pattern created" >&2
               return 1
