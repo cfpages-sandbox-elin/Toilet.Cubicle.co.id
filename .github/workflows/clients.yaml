@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.7
+name: Update Multiple Clients v.8.8
 
 on:
   push:
@@ -54,14 +54,15 @@ jobs:
                 IFS=':' read -r category cities <<< "$part"
                 IFS=',' read -ra CITIES <<< "$cities"
                 for city in "${CITIES[@]}"; do
-                  [ -n "$pattern" ] && pattern+="\n"
+                  [ -n "$pattern" ] && pattern+=$'\n'
                   pattern+="$city"
                 done
               done
             else
+              # Simple filter
               IFS=',' read -ra FILTER_PARTS <<< "$filter"
               for part in "${FILTER_PARTS[@]}"; do
-                [ -n "$pattern" ] && pattern+="\n"
+                [ -n "$pattern" ] && pattern+=$'\n'
                 pattern+="$part"
               done
             fi
@@ -72,26 +73,20 @@ jobs:
           # Function to find files matching pattern
           find_matching_files() {
             local pattern="$1"
-            local grep_pattern=""
-            
-            # Split the pattern by commas and create the grep pattern
-            IFS=',' read -ra KEYWORDS <<< "$pattern"
-            for keyword in "${KEYWORDS[@]}"; do
-              if [ -n "$keyword" ]; then
-                [ -n "$grep_pattern" ] && grep_pattern+="\|"
-                # Escape dots and other special characters in the keyword
-                escaped_keyword=$(echo "$keyword" | sed 's/[.[\*^$()+?{|]/\\&/g')
-                grep_pattern+=".*$escaped_keyword.*"
+            local matching_files=""
+
+            # Split the pattern by newlines and search for each city
+            while IFS= read -r city; do
+              if [ -n "$city" ]; then
+                # Escape dots and other special characters in the city name
+                escaped_city=$(echo "$city" | sed 's/[.[\*^$()+?{|]/\\&/g')
+                new_matches=$(find . -type f -name "*.html" | grep -i "$escaped_city" || true)
+                matching_files+="$new_matches"$'\n'
               fi
-            done
-            
-            if [ -n "$grep_pattern" ]; then
-              echo "Using grep pattern: $grep_pattern" >&2
-              find . -type f -name "*.html" | grep -E "$grep_pattern" || true
-            else
-              echo "No valid grep pattern created" >&2
-              return 1
-            fi
+            done <<< "$pattern"
+
+            # Remove duplicate files and empty lines
+            echo "$matching_files" | sort -u | grep -v '^$'
           }
 
           # First pass: collect all filters
