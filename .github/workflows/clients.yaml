@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.4
+name: Update Multiple Clients v.8.5
 
 on:
   push:
@@ -72,17 +72,16 @@ jobs:
           # Function to find files matching pattern
           find_matching_files() {
             local pattern="$1"
-            local files=""
+            local grep_pattern=""
             
+            # Convert newline-separated keywords into a grep pattern with OR conditions
             while IFS= read -r keyword; do
-              if [ -z "$files" ]; then
-                files=$(find . -type f -name "*.html" | xargs grep -l "$keyword" 2>/dev/null || true)
-              else
-                files=$(echo "$files" | xargs grep -l "$keyword" 2>/dev/null || true)
-              fi
+              [ -n "$grep_pattern" ] && grep_pattern+="\|"
+              grep_pattern+="$keyword"
             done <<< "$pattern"
             
-            echo "$files"
+            # Use -E for extended regex and combine all keywords with OR
+            find . -type f -name "*.html" | xargs grep -l -E "$grep_pattern" 2>/dev/null || true
           }
 
           # First pass: collect all filters
