@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.16
+name: Update Multiple Clients v.8.17
 
 on:
   push:
@@ -182,7 +182,7 @@ jobs:
                 }
               }
             ' "$file")
-              if [[ $OLD_PHONE_NAME =~ ^([0-9]{4} [0-9]{4} [0-9]{4})\ \(([^)]+)\)$ ]]; then
+              if [[ $OLD_PHONE_NAME =~ ^([0-9]{4} [0-9]{4} [0-9]{4}) \(([^)]+)\)$ ]]; then
                 OLD_PHONE="${BASH_REMATCH[1]}"
                 OLD_NAME="${BASH_REMATCH[2]}"
               else
