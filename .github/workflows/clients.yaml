@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.19
+name: Update Multiple Clients v.8.20
 
 on:
   push:
@@ -181,11 +181,21 @@ jobs:
                   }
                 }
               }' "$file")
-              if [[ "$OLD_PHONE_NAME" =~ ^([0-9]{4} [0-9]{4} [0-9]{4}) \(([^)]+)\)$ ]]; then
-                OLD_PHONE="${BASH_REMATCH[1]}"
-                OLD_NAME="${BASH_REMATCH[2]}"
+
+              # Initialize OLD_PHONE and OLD_NAME
+              OLD_PHONE=""
+              OLD_NAME=""
+
+              # Only try to split if OLD_PHONE_NAME is not empty
+              if [ -n "$OLD_PHONE_NAME" ]; then
+                if [[ "$OLD_PHONE_NAME" =~ ^([0-9]{4}[[:space:]][0-9]{4}[[:space:]][0-9]{4})[[:space:]]*\(([^)]+)\)$ ]]; then
+                  OLD_PHONE="${BASH_REMATCH[1]}"
+                  OLD_NAME="${BASH_REMATCH[2]}"
+                else
+                  echo "Warning: Old phone name format doesn't match expected pattern: $OLD_PHONE_NAME"
+                fi
               else
-                echo "Old phone name not exist nothing to split"
+                echo "Warning: Old phone name is empty"
               fi
               OLD_WAURL=$(awk '
               /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/ {
