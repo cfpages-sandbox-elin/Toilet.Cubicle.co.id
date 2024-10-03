@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.9
+name: Update Multiple Clients v.8.10
 
 on:
   push:
@@ -176,8 +176,25 @@ jobs:
                 OLD_PHONE="$(echo "$OLD_PHONE_NAME" | grep -oP '^[0-9]{4} [0-9]{4}( [0-9]{4})?')"
                 OLD_NAME="$(echo "$OLD_PHONE_NAME" | grep -oP '\([^()]+\)' | tr -d '()')"
               fi
-              OLD_WAURL=$(awk '/<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/{while(getline && !/<\/div>/){if(match($0,/href="(https:\/\/[^"]+)"/,a)){print a[1];exit}}}}' "$file")
-              OLD_PHURL=$(awk '/<div[^>]*class="[^"]*tlp-floating[^"]*"/{while(getline && !/<\/div>/){if(match($0,/href="(https:\/\/[^"]+)"/,a)){print a[1];exit}}}}' "$file")
+              OLD_WAURL=$(awk '
+              /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/ {
+                while (getline && !/<\/div>/) {
+                  if (match($0, /href="(https:\/\/[^"]+)"/, a)) {
+                    print a[1]
+                    exit
+                  }
+                }
+              }' "$file")
+              OLD_PHURL=$(awk '
+              /<div[^>]*class="[^"]*tlp-floating[^"]*"/ {
+                while (getline && !/<\/div>/) {
+                  if (match($0, /href="(https:\/\/[^"]+)"/, a)) {
+                    print a[1]
+                    exit
+                  }
+                }
+              }' "$file")
+              [ -z "$OLD_PHURL" ] && OLD_PHURL="$OLD_WAURL"
 
               echo "Current values in $file:"
               echo "  Old Phone Name: $OLD_PHONE_NAME"
