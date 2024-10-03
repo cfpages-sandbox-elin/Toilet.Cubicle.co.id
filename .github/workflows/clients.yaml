@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.8
+name: Update Multiple Clients v.8.9
 
 on:
   push:
@@ -171,13 +171,13 @@ jobs:
               echo "Processing file: $file"
               
               # Extract all necessary information
-              OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4}( [0-9]{4})? \([^)]+\)/ {print $3; exit}' "$file")
+              OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4}( [0-9]{4})?.*\([^)]+\)/ {gsub(/^[^0-9]+|[^)]+$/, "", $3); print $3; exit}' "$file")
               if [[ -n "$OLD_PHONE_NAME" ]]; then
                 OLD_PHONE="$(echo "$OLD_PHONE_NAME" | grep -oP '^[0-9]{4} [0-9]{4}( [0-9]{4})?')"
                 OLD_NAME="$(echo "$OLD_PHONE_NAME" | grep -oP '\([^()]+\)' | tr -d '()')"
               fi
-              OLD_WAURL=$(awk '/class="(whatsapp-floating|sms-floating)"/ { flag=1; next } flag && /href="/ { match($0, /href="([^"]+)"/, arr); if(arr[1]!="") { print arr[1]; exit } }' "$file")
-              OLD_PHURL=$(awk '/class="tlp-floating"/ { flag=1; next } flag && /href="/ { match($0, /href="([^"]+)"/, arr); if(arr[1]!="") { print arr[1]; exit } }' "$file")
+              OLD_WAURL=$(awk '/<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/{while(getline && !/<\/div>/){if(match($0,/href="(https:\/\/[^"]+)"/,a)){print a[1];exit}}}}' "$file")
+              OLD_PHURL=$(awk '/<div[^>]*class="[^"]*tlp-floating[^"]*"/{while(getline && !/<\/div>/){if(match($0,/href="(https:\/\/[^"]+)"/,a)){print a[1];exit}}}}' "$file")
 
               echo "Current values in $file:"
               echo "  Old Phone Name: $OLD_PHONE_NAME"
