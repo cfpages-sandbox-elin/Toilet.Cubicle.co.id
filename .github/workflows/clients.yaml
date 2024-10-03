@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.14
+name: Update Multiple Clients v.8.15
 
 on:
   push:
@@ -183,8 +183,8 @@ jobs:
               }
             ' "$file")
               if [[ -n "$OLD_PHONE_NAME" ]]; then
-                OLD_PHONE=$(echo "$OLD_PHONE_NAME" | grep -E -o '^[0-9]{4} [0-9]{4} [0-9]{4}')
-                OLD_NAME=$(echo "$OLD_PHONE_NAME" | sed -n 's/.*(\([^)]*\)).*/\1/p')
+                OLD_PHONE=$(echo "$OLD_PHONE_NAME" | awk '{print $1, $2, $3}')
+                OLD_NAME=$(echo "$OLD_PHONE_NAME" | awk -F'[()]' '{print $2}')
               fi
               OLD_WAURL=$(awk '
               /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/ {
