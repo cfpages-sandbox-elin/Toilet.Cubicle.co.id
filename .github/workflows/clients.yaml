@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.12
+name: Update Multiple Clients v.8.13
 
 on:
   push:
@@ -183,7 +183,7 @@ jobs:
               }
             ' "$file")
               if [[ -n "$OLD_PHONE_NAME" ]]; then
-                OLD_PHONE="$(echo "$OLD_PHONE_NAME" | grep -oP '^[0-9]{4} [0-9]{4}( [0-9]{4})?')"
+                OLD_PHONE="$(echo "$OLD_PHONE_NAME" | grep -oP '^[0-9]{4} [0-9]{4} [0-9]{4}')"
                 OLD_NAME="$(echo "$OLD_PHONE_NAME" | grep -oP '\([^()]+\)' | tr -d '()')"
               fi
               OLD_WAURL=$(awk '
