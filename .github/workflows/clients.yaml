@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.15
+name: Update Multiple Clients v.8.16
 
 on:
   push:
@@ -182,9 +182,11 @@ jobs:
                 }
               }
             ' "$file")
-              if [[ -n "$OLD_PHONE_NAME" ]]; then
-                OLD_PHONE=$(echo "$OLD_PHONE_NAME" | awk '{print $1, $2, $3}')
-                OLD_NAME=$(echo "$OLD_PHONE_NAME" | awk -F'[()]' '{print $2}')
+              if [[ $OLD_PHONE_NAME =~ ^([0-9]{4} [0-9]{4} [0-9]{4})\ \(([^)]+)\)$ ]]; then
+                OLD_PHONE="${BASH_REMATCH[1]}"
+                OLD_NAME="${BASH_REMATCH[2]}"
+              else
+                echo "Old phone name not exist nothing to split"
               fi
               OLD_WAURL=$(awk '
               /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/ {
