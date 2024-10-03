@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.10
+name: Update Multiple Clients v.8.11
 
 on:
   push:
@@ -195,6 +195,16 @@ jobs:
                 }
               }' "$file")
               [ -z "$OLD_PHURL" ] && OLD_PHURL="$OLD_WAURL"
+
+              if [ -z "$OLD_PHONE_NAME" ] || [ -z "$OLD_WAURL" ] || [ -z "$OLD_PHURL" ]; then
+                echo "Error: Unable to extract one or more of the following from $file:"
+                [ -z "$OLD_PHONE_NAME" ] && echo "- Old Phone Name"
+                [ -z "$OLD_WAURL" ] && echo "- Old WhatsApp/SMS URL"
+                [ -z "$OLD_PHURL" ] && echo "- Old Phone URL"
+                echo "Please check the HTML structure and update the extraction logic if necessary."
+                echo "Skipping operation for this file and moving to the next."
+                continue
+              fi
 
               echo "Current values in $file:"
               echo "  Old Phone Name: $OLD_PHONE_NAME"
