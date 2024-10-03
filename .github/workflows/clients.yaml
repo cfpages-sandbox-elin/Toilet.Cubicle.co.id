@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.11
+name: Update Multiple Clients v.8.12
 
 on:
   push:
@@ -171,7 +171,17 @@ jobs:
               echo "Processing file: $file"
               
               # Extract all necessary information
-              OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4}( [0-9]{4})?.*\([^)]+\)/ {gsub(/^[^0-9]+|[^)]+$/, "", $3); print $3; exit}' "$file")
+              OLD_PHONE_NAME=$(awk -F'[<>]' '
+              /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating|tlp-floating)[^"]*".*<span[^>]*>/ {
+                while (getline && !/<\/div>/) {
+                  if ($0 ~ /<span[^>]*>[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/) {
+                    match($0, /[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/, arr)
+                    print arr[0]
+                    exit
+                  }
+                }
+              }
+            ' "$file")
               if [[ -n "$OLD_PHONE_NAME" ]]; then
                 OLD_PHONE="$(echo "$OLD_PHONE_NAME" | grep -oP '^[0-9]{4} [0-9]{4}( [0-9]{4})?')"
                 OLD_NAME="$(echo "$OLD_PHONE_NAME" | grep -oP '\([^()]+\)' | tr -d '()')"
@@ -179,8 +189,8 @@ jobs:
               OLD_WAURL=$(awk '
               /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating)[^"]*"/ {
                 while (getline && !/<\/div>/) {
-                  if (match($0, /href="(https:\/\/[^"]+)"/, a)) {
-                    print a[1]
+                  if (match($0, /href="(https:\/\/[^"]+)"/, arr)) {
+                    print arr[1]
                     exit
                   }
                 }
@@ -188,13 +198,16 @@ jobs:
               OLD_PHURL=$(awk '
               /<div[^>]*class="[^"]*tlp-floating[^"]*"/ {
                 while (getline && !/<\/div>/) {
-                  if (match($0, /href="(https:\/\/[^"]+)"/, a)) {
-                    print a[1]
+                  if (match($0, /href="(https:\/\/[^"]+)"/, arr)) {
+                    print arr[1]
                     exit
                   }
                 }
               }' "$file")
-              [ -z "$OLD_PHURL" ] && OLD_PHURL="$OLD_WAURL"
+              # Fallback logic 
+              [ -z "$OLD_PHONE_NAME" ] && OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/ {match($0, /[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/, arr); print arr[0]; exit}' "$file")
+              [ -z "$OLD_WAURL" ] && OLD_WAURL=$(awk '/https:\/\/(what\.sapp\.my\.id|klik\.kubikel\.id)/ {match($0, /(https:\/\/[^"]+)/, arr); print arr[1]; exit}' "$file")
+              [ -z "$OLD_PHURL" ] && OLD_PHURL=$(awk '/https:\/\/(con\.tact\.my\.id|klik\.kubikel\.id)/ {match($0, /(https:\/\/[^"]+)/, arr); print arr[1]; exit}' "$file")
 
               if [ -z "$OLD_PHONE_NAME" ] || [ -z "$OLD_WAURL" ] || [ -z "$OLD_PHURL" ]; then
                 echo "Error: Unable to extract one or more of the following from $file:"
