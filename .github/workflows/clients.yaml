@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.20
+name: Update Multiple Clients v.8.21
 
 on:
   push:
@@ -188,11 +188,19 @@ jobs:
 
               # Only try to split if OLD_PHONE_NAME is not empty
               if [ -n "$OLD_PHONE_NAME" ]; then
-                if [[ "$OLD_PHONE_NAME" =~ ^([0-9]{4}[[:space:]][0-9]{4}[[:space:]][0-9]{4})[[:space:]]*\(([^)]+)\)$ ]]; then
-                  OLD_PHONE="${BASH_REMATCH[1]}"
-                  OLD_NAME="${BASH_REMATCH[2]}"
+                # Extract phone number (assumes format: "1234 5678 9012 (Name)")
+                OLD_PHONE=$(echo "$OLD_PHONE_NAME" | grep -o '^[0-9]\{4\} [0-9]\{4\} [0-9]\{4\}')
+                
+                # Extract name (everything between parentheses)
+                OLD_NAME=$(echo "$OLD_PHONE_NAME" | grep -o '([^)]*)')
+                # Remove the parentheses from the name
+                OLD_NAME=${OLD_NAME#\(}
+                OLD_NAME=${OLD_NAME%\)}
+                
+                if [ -z "$OLD_PHONE" ] || [ -z "$OLD_NAME" ]; then
+                  echo "Warning: Could not extract phone or name from: $OLD_PHONE_NAME"
                 else
-                  echo "Warning: Old phone name format doesn't match expected pattern: $OLD_PHONE_NAME"
+                  echo "Successfully extracted Phone: $OLD_PHONE and Name: $OLD_NAME"
                 fi
               else
                 echo "Warning: Old phone name is empty"
