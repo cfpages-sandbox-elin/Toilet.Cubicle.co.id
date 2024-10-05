@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.22
+name: Update Multiple Clients v.8.23
 
 on:
   push:
@@ -169,6 +169,11 @@ jobs:
             CHANGES_MADE=false
             while IFS= read -r file; do
               echo "Processing file: $file"
+
+              # Add this before the extraction attempts
+              echo "DEBUG: Showing relevant HTML structure"
+              grep -A 5 -B 5 "whatsapp-floating\|sms-floating\|tlp-floating" "$file" || echo "No floating divs found"
+              grep -A 2 -B 2 "[0-9]\{4\} [0-9]\{4\} [0-9]\{4\}" "$file" || echo "No phone numbers found"
               
               # Extract all necessary information
               OLD_PHONE_NAME=$(awk -F'[<>]' '
@@ -181,6 +186,11 @@ jobs:
                   }
                 }
               }' "$file")
+
+              # Fallback logic for old phone name
+              if [ -z "$OLD_PHONE_NAME" ]; then
+                OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/ {match($0, /[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/, arr); print arr[0]; exit}' "$file")
+              fi
 
               # After extracting OLD_PHONE_NAME
               echo "Extracted OLD_PHONE_NAME: $OLD_PHONE_NAME"
@@ -223,9 +233,7 @@ jobs:
                   }
                 }
               }' "$file")
-              # Fallback logic 
-              [ -z "$OLD_PHONE_NAME" ] && OLD_PHONE_NAME=$(awk -F'[<>]' '/<span[^>]*>[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/ {match($0, /[0-9]{4} [0-9]{4} [0-9]{4}.*\([^)]+\)/, arr); print arr[0]; exit}' "$file")
-
+              # Fallback logic for wa url & phone url
               if [ -z "$OLD_WAURL" ]; then
                 OLD_WAURL=$(awk '
                   /https:\/\/((api\.whatsapp\.com|what\.sapp\.my\.id)|(klik|link)\.[^"\/]+)/ {
