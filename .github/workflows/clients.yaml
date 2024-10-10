@@ -1,4 +1,4 @@
-name: Update Multiple Clients v.8.23
+name: Update Multiple Clients v.8.24
 
 on:
   push:
@@ -170,11 +170,6 @@ jobs:
             while IFS= read -r file; do
               echo "Processing file: $file"
 
-              # Add this before the extraction attempts
-              echo "DEBUG: Showing relevant HTML structure"
-              grep -A 5 -B 5 "whatsapp-floating\|sms-floating\|tlp-floating" "$file" || echo "No floating divs found"
-              grep -A 2 -B 2 "[0-9]\{4\} [0-9]\{4\} [0-9]\{4\}" "$file" || echo "No phone numbers found"
-              
               # Extract all necessary information
               OLD_PHONE_NAME=$(awk -F'[<>]' '
               /<div[^>]*class="[^"]*(whatsapp-floating|sms-floating|tlp-floating)[^"]*".*<span[^>]*>/ {
