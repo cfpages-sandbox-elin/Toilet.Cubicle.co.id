@@ -1,4 +1,4 @@
-name: Google Index Status v1.3.1
+name: Google Index Status v1.3.2
 on: 
   workflow_dispatch:
   schedule:
@@ -102,7 +102,7 @@ jobs:
                           'original_url': original_url,
                           'google_redirect_url': google_redirect_url
                       })
-               return urls
+              return urls
 
           def main():
               repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
