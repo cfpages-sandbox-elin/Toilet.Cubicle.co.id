@@ -1,4 +1,4 @@
-name: Google Index Status v1.2
+name: Google Index Status v1.3
 on: 
   workflow_dispatch:
   schedule:
@@ -95,20 +95,15 @@ jobs:
                   if a_tag:
                       original_url = a_tag['href']
                       
-                      # Extract 'usg' parameter if present in the original Google search results
-                      google_url = a_tag.get('data-redirecturl', '')
-                      usg_match = re.search(r'usg=([^&]+)', google_url)
-                      usg_param = usg_match.group(1) if usg_match else ''
+                      # Use the Google redirect URL directly from the search results
+                      google_redirect_url = a_tag.get('data-redirecturl', '')
                       
-                      # Construct Google redirect URL with the extracted usg parameter
-                      google_redirect_url = (f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8"
-                                            f"&url={urllib.parse.quote(original_url)}"
-                                            f"&usg={usg_param}")
-                      
-                      urls.append({
-                          'original_url': original_url,
-                          'google_redirect_url': google_redirect_url
-                      })
+                      # Only add if we have a valid redirect URL
+                      if google_redirect_url:
+                          urls.append({
+                              'original_url': original_url,
+                              'google_redirect_url': google_redirect_url
+                          })
               return urls
 
           def main():
