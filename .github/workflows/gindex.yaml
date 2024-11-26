@@ -88,28 +88,28 @@ jobs:
               return sorted(set(pages))
 
           def extract_google_urls(html):
-          soup = BeautifulSoup(html, 'html.parser')
-          urls = []
-          for link in soup.find_all('div', class_='yuRUbf'):
-              a_tag = link.find('a')
-              if a_tag:
-                  original_url = a_tag['href']
-                  
-                  # Extract 'usg' parameter if present in the original Google search results
-                  google_url = a_tag.get('data-redirecturl', '')
-                  usg_match = re.search(r'usg=([^&]+)', google_url)
-                  usg_param = usg_match.group(1) if usg_match else ''
-                  
-                  # Construct Google redirect URL with the extracted usg parameter
-                  google_redirect_url = (f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8"
-                                        f"&url={urllib.parse.quote(original_url)}"
-                                        f"&usg={usg_param}")
-                  
-                  urls.append({
-                      'original_url': original_url,
-                      'google_redirect_url': google_redirect_url
-                  })
-          return urls
+              soup = BeautifulSoup(html, 'html.parser')
+              urls = []
+              for link in soup.find_all('div', class_='yuRUbf'):
+                  a_tag = link.find('a')
+                  if a_tag:
+                      original_url = a_tag['href']
+                      
+                      # Extract 'usg' parameter if present in the original Google search results
+                      google_url = a_tag.get('data-redirecturl', '')
+                      usg_match = re.search(r'usg=([^&]+)', google_url)
+                      usg_param = usg_match.group(1) if usg_match else ''
+                      
+                      # Construct Google redirect URL with the extracted usg parameter
+                      google_redirect_url = (f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8"
+                                            f"&url={urllib.parse.quote(original_url)}"
+                                            f"&usg={usg_param}")
+                      
+                      urls.append({
+                          'original_url': original_url,
+                          'google_redirect_url': google_redirect_url
+                      })
+              return urls
 
           def main():
               repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
