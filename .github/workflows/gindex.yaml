@@ -1,4 +1,4 @@
-name: Google Index Status v1.0
+name: Google Index Status v1.1
 on: 
   workflow_dispatch:
   schedule:
@@ -37,16 +37,13 @@ jobs:
           import os
           from datetime import datetime
 
-          def get_google_results(query, start=0, max_retries=3, retry_delay=5):
-              """
-              Fetch Google search results, handling rate limiting and retries.
-              """
+          def get_google_results(query, num=10, start=0, max_retries=3, retry_delay=5):
               headers = {
                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
               }
               params = {
                   'q': query,
-                  'num': 100,
+                  'num': num,
                   'start': start
               }
               
@@ -98,6 +95,9 @@ jobs:
                   if a_tag:
                       original_url = a_tag['href']
                       google_redirect_url = f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url={urllib.parse.quote(original_url)}"
+                      url_params = urllib.parse.urlparse(google_redirect_url)
+                      usg_param = urllib.parse.parse_qs(url_params.query).get('usg', [''])[0]
+                      google_redirect_url += f"&usg={usg_param}"
                       urls.append({
                           'original_url': original_url,
                           'google_redirect_url': google_redirect_url
@@ -112,21 +112,17 @@ jobs:
               all_results = []
               total_results = 'N/A'
 
-              # Get first page results
-              first_page_html = get_google_results(site_query)
+              # Get first page results with num=10 to get the total indexed pages
+              first_page_html = get_google_results(site_query, num=10)
               if first_page_html:
                   total_results = parse_total_results(first_page_html)
                   
                   # Detect available search result pages
                   search_pages = detect_search_pages(first_page_html)
                   
-                  # Collect URLs from first page
-                  first_page_urls = extract_google_urls(first_page_html)
-                  all_results.extend(first_page_urls)
-
-                  # Collect URLs from additional pages
-                  for start in search_pages[1:]:
-                      page_html = get_google_results(site_query, start)
+                  # Collect URLs from all pages
+                  for start in search_pages:
+                      page_html = get_google_results(site_query, num=100, start=start)
                       if page_html:
                           page_urls = extract_google_urls(page_html)
                           all_results.extend(page_urls)
@@ -134,9 +130,10 @@ jobs:
               # Create DataFrame
               df = pd.DataFrame(all_results)
 
-              # Generate monthly filename
+              # Generate output file path
+              os.makedirs('.md', exist_ok=True)
               current_date = datetime.now().strftime("%Y-%m-%d")
-              filename = f'serp-status-{current_date}.md'
+              filename = f'.md/serp-status-{current_date}.md'
 
               # Write results to Markdown
               with open(filename, 'w') as f:
@@ -161,6 +158,6 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add serp-status-*.md
+          git add .md/serp-status-*.md
           git commit -m 'Update Monthly Google Indexing Status' || echo "No changes to commit"
           git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} HEAD:main
