@@ -1,4 +1,4 @@
-name: Google Index Status v1.3
+name: Google Index Status v1.3.1
 on: 
   workflow_dispatch:
   schedule:
@@ -98,13 +98,11 @@ jobs:
                       # Use the Google redirect URL directly from the search results
                       google_redirect_url = a_tag.get('data-redirecturl', '')
                       
-                      # Only add if we have a valid redirect URL
-                      if google_redirect_url:
-                          urls.append({
-                              'original_url': original_url,
-                              'google_redirect_url': google_redirect_url
-                          })
-              return urls
+                      urls.append({
+                          'original_url': original_url,
+                          'google_redirect_url': google_redirect_url
+                      })
+               return urls
 
           def main():
               repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
