@@ -1,4 +1,4 @@
-name: Google Index Status v1.3.2
+name: Google Index Status v1.4
 on: 
   workflow_dispatch:
   schedule:
@@ -95,12 +95,36 @@ jobs:
                   if a_tag:
                       original_url = a_tag['href']
                       
-                      # Use the Google redirect URL directly from the search results
-                      google_redirect_url = a_tag.get('data-redirecturl', '')
+                      # Try multiple methods to get the redirection URL
+                      redirect_url = ''
+                      
+                      # Method 1: Check data-redirecturl attribute
+                      redirect_url = a_tag.get('data-redirecturl', '')
+                      
+                      # Method 2: Check if href starts with '/url?'
+                      if not redirect_url and original_url.startswith('/url?'):
+                          redirect_url = 'https://www.google.com' + original_url
+                      
+                      # Method 3: Look for data-cthref attribute
+                      if not redirect_url:
+                          redirect_url = a_tag.get('data-cthref', '')
+                          if redirect_url.startswith('/url?'):
+                              redirect_url = 'https://www.google.com' + redirect_url
+                      
+                      # Method 4: Extract URL parameter from href
+                      if not redirect_url and '/url?' in original_url:
+                          try:
+                              from urllib.parse import parse_qs, urlparse
+                              parsed_url = urlparse(original_url)
+                              url_params = parse_qs(parsed_url.query)
+                              if 'url' in url_params:
+                                  redirect_url = url_params['url'][0]
+                          except Exception:
+                              pass
                       
                       urls.append({
                           'original_url': original_url,
-                          'google_redirect_url': google_redirect_url
+                          'google_redirect_url': redirect_url
                       })
               return urls
 
