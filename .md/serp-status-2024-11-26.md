@@ -1,8 +1,8 @@
 # Google Indexing Status for https://toilet.cubicle.co.id
 
-## Measurement Date: 2024-11-26 22:34:43
+## Measurement Date: 2024-11-26 22:50:50
 
-## Total Indexed Pages: 491
+## Total Indexed Pages: 431
 
 | No. | Original URL | Google Redirect URL |
 |-----|--------------|---------------------|
@@ -118,6 +118,3 @@
 | 110 | https://toilet.cubicle.co.id/cubicle-toilet-maluku-barat-daya | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-maluku-barat-daya&usg= |
 | 111 | https://toilet.cubicle.co.id/cubicle-toilet-sumba-barat-daya | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-sumba-barat-daya&usg= |
 | 112 | https://toilet.cubicle.co.id/cubicle-toilet-sumba-barat.html | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-sumba-barat.html&usg= |
-| 113 | https://toilet.cubicle.co.id/cubicle-toilet-maluku-barat-daya | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-maluku-barat-daya&usg= |
-| 114 | https://toilet.cubicle.co.id/cubicle-toilet-sumba-barat-daya | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-sumba-barat-daya&usg= |
-| 115 | https://toilet.cubicle.co.id/cubicle-toilet-sumba-barat.html | https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&url=https%3A//toilet.cubicle.co.id/cubicle-toilet-sumba-barat.html&usg= |
