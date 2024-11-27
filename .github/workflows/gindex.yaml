@@ -1,4 +1,4 @@
-name: Google Index Status v1.8
+name: Google Index Status v1.9
 on: 
   workflow_dispatch:
   schedule:
@@ -60,32 +60,51 @@ jobs:
                   'q': query,
                   'num': num,
                   'start': start,
-                  'client': 'chrome',  # Consistent with Chrome User-Agent
+                  'client': 'chrome',
                   'oq': query,
                   'sclient': 'gws-wiz-serp',
                   'sourceid': 'chrome',
-                  'ie': 'UTF-8'  # Input encoding
+                  'ie': 'UTF-8'
               }
               
               retries = 0
               while retries < max_retries:
                   try:
-                      response = requests.get('https://www.google.com/search', params=params, headers=headers)
+                      # Construct and print the full URL for debugging
+                      full_url = 'https://www.google.com/search'
+                      print(f"Requesting URL: {full_url}")
+                      print(f"Parameters: {params}")
+                      
+                      response = requests.get(full_url, params=params, headers=headers)
+                      
+                      # Print response details
+                      print(f"Response Status Code: {response.status_code}")
+                      print(f"Response Headers: {response.headers}")
+                      
+                      # Save raw HTML for inspection if needed
+                      with open('google_response.html', 'w', encoding='utf-8') as f:
+                          f.write(response.text)
+                      
                       if response.status_code == 429:  # Too Many Requests
                           retries += 1
                           print(f"Rate limit hit, retrying in {retry_delay} seconds...")
                           import time
                           time.sleep(retry_delay)
                           continue
+                      
                       response.raise_for_status()
                       return response.text
+                  
                   except requests.exceptions.RequestException as e:
+                      print(f"Error fetching Google results: {e}")
                       retries += 1
                       if retries >= max_retries:
-                          print(f"Failed to fetch Google results after {max_retries} retries: {e}")
+                          print(f"Failed to fetch Google results after {max_retries} retries")
                           return None
-                      print(f"Error fetching Google results, retrying in {retry_delay} seconds: {e}")
+                      print(f"Retrying in {retry_delay} seconds...")
                       time.sleep(retry_delay)
+              
+              return None
 
           def parse_total_results(html):
               soup = BeautifulSoup(html, 'html.parser')
@@ -109,20 +128,34 @@ jobs:
 
           def extract_google_urls(html):
               soup = BeautifulSoup(html, 'html.parser')
+              
+              # Print some debugging information about the parsed HTML
+              print("Parsing HTML...")
+              print(f"HTML length: {len(html)} characters")
+              
+              # Check if the HTML contains any expected Google search content
+              title = soup.find('title')
+              print(f"Page Title: {title.text if title else 'No title found'}")
+              
+              # Look for search result containers
+              result_containers = soup.find_all('div', class_='yuRUbf')
+              print(f"Number of result containers found: {len(result_containers)}")
+              
               urls = []
-              for link in soup.find_all('div', class_='yuRUbf'):
+              for link in result_containers:
                   a_tag = link.find('a')
                   if a_tag and 'href' in a_tag.attrs:
                       original_url = a_tag['href']
+                      print(f"Found URL: {original_url}")
                       
-                      ved = a_tag.get('data-ved', '')
-                      usg = a_tag.get('data-usg', '')
-
-                      print(f"Debug - Original URL: {original_url}")
-                      print(f"Debug - data-ved: {ved}")
-                      print(f"Debug - data-usg: {usg}")
+                      # Try multiple methods to get attributes
+                      ved = a_tag.get('data-ved') or ''
+                      usg = a_tag.get('data-usg') or ''
                       
-                      # Construct a synthetic redirect URL
+                      print(f"VED attribute: {ved}")
+                      print(f"USG attribute: {usg}")
+                      
+                      # Construct redirect URL (similar to previous version)
                       redirect_url = (
                           f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
                           f"ved={urllib.parse.quote(ved)}&"
@@ -134,6 +167,7 @@ jobs:
                           'original_url': original_url,
                           'google_redirect_url': redirect_url
                       })
+              
               return urls
 
           def main():
