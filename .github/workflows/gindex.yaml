@@ -1,4 +1,4 @@
-name: Google Index Status v1.9.2
+name: Google Index Status v1.9.3
 on: 
   workflow_dispatch:
   schedule:
@@ -75,13 +75,11 @@ jobs:
                   try:
                       # Construct and print the full URL for debugging
                       full_url = requests.Request('GET', 'https://www.google.com/search', params=params).prepare().url
-                      print(f"Full Constructed URL: {full_url}")
-                      
                       response = requests.get('https://www.google.com/search', params=params, headers=headers)
+                      
+                      # Print details for debug
                       print(f"Requesting URL: {full_url}")
                       print(f"Parameters: {params}")
-                      
-                      # Print response details
                       print(f"Response Status Code: {response.status_code}")
                       print(f"Response Headers: {response.headers}")
                       
