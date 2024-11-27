@@ -1,4 +1,4 @@
-name: Google Index Status v1.7.1
+name: Google Index Status v1.7.2
 on: 
   workflow_dispatch:
   schedule:
@@ -96,8 +96,10 @@ jobs:
                       original_url = a_tag['href']
                       
                       # Multiple methods to extract data-usg
-                      usg = a_tag.get('data-usg', '')
-                      ved = a_tag.get('data-ved', '')
+                      ved = a_tag['data-ved']
+                      
+                      # Try different attribute extraction methods
+                      usg = a_tag['data-usg']
 
                       print(f"Debug - Original URL: {original_url}")
                       print(f"Debug - data-ved: {ved}")
