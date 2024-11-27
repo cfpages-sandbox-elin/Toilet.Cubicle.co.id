@@ -1,4 +1,4 @@
-name: Google Index Status v1.9
+name: Google Index Status v1.9.1
 on: 
   workflow_dispatch:
   schedule:
@@ -172,7 +172,7 @@ jobs:
 
           def main():
               repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
-              site_url = f"https://{repo_name}"
+              site_url = f"{repo_name}"
 
               site_query = f"site:{site_url}"
               all_results = []
