@@ -1,4 +1,4 @@
-name: Google Index Status v1.9.1
+name: Google Index Status v1.9.2
 on: 
   workflow_dispatch:
   schedule:
@@ -65,17 +65,21 @@ jobs:
                   'sclient': 'gws-wiz-serp',
                   'sourceid': 'chrome',
                   'ie': 'UTF-8'
+                  'biw': '1263',
+                  'bih': '397',
+                  'uact': '5'
               }
               
               retries = 0
               while retries < max_retries:
                   try:
                       # Construct and print the full URL for debugging
-                      full_url = 'https://www.google.com/search'
+                      full_url = requests.Request('GET', 'https://www.google.com/search', params=params).prepare().url
+                      print(f"Full Constructed URL: {full_url}")
+                      
+                      response = requests.get('https://www.google.com/search', params=params, headers=headers)
                       print(f"Requesting URL: {full_url}")
                       print(f"Parameters: {params}")
-                      
-                      response = requests.get(full_url, params=params, headers=headers)
                       
                       # Print response details
                       print(f"Response Status Code: {response.status_code}")
@@ -172,7 +176,7 @@ jobs:
 
           def main():
               repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
-              site_url = f"{repo_name}"
+              site_url = f"https://{repo_name}"
 
               site_query = f"site:{site_url}"
               all_results = []
