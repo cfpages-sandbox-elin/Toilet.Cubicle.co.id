@@ -1,4 +1,4 @@
-name: Google Index Status v1.5
+name: Google Index Status v1.5.1
 on: 
   workflow_dispatch:
   schedule:
@@ -96,12 +96,12 @@ jobs:
                       original_url = a_tag['href']
                       
                       # Extract or generate synthetic parameters
-                      ved = a_tag.get('data-ved', f'2ahUKEwjX_example_{len(urls)}')
-                      usg = a_tag.get('data-usg', f'AOvVaw{len(urls)}example_url')
+                      ved = a_tag.get('data-ved', f'2ahUKEwjX_{len(urls)}')
+                      usg = a_tag.get('data-usg', f'AOvVaw{len(urls)}')
                       
                       # Construct a synthetic redirect URL
                       redirect_url = (
-                          f"/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
+                          f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
                           f"ved={urllib.parse.quote(ved)}&"
                           f"url={urllib.parse.quote(original_url)}&"
                           f"usg={urllib.parse.quote(usg)}"
