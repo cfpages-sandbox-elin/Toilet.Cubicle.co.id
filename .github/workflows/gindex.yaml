@@ -1,4 +1,4 @@
-name: Google Index Status v1.6
+name: Google Index Status v1.7
 on: 
   workflow_dispatch:
   schedule:
@@ -95,9 +95,21 @@ jobs:
                   if a_tag and 'href' in a_tag.attrs:
                       original_url = a_tag['href']
                       
-                      # Extract data-ved and data-usg directly
+                      # Multiple methods to extract data-usg
                       ved = a_tag.get('data-ved', '')
-                      usg = a_tag.get('data-usg', '')
+                      
+                      # Try different attribute extraction methods
+                      usg = (
+                          a_tag.get('data-usg') or 
+                          a_tag.attrs.get('data-usg') or 
+                          a_tag.get('data-USG') or 
+                          a_tag.attrs.get('data-USG') or 
+                          ''
+                      )
+
+                      print(f"Debug - Original URL: {original_url}")
+                      print(f"Debug - data-ved: {ved}")
+                      print(f"Debug - data-usg: {usg}")
                       
                       # Construct a synthetic redirect URL
                       redirect_url = (
