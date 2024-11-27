@@ -64,7 +64,7 @@ jobs:
                   'oq': query,
                   'sclient': 'gws-wiz-serp',
                   'sourceid': 'chrome',
-                  'ie': 'UTF-8'
+                  'ie': 'UTF-8',
                   'biw': '1263',
                   'bih': '397',
                   'uact': '5'
