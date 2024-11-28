@@ -1,4 +1,4 @@
-name: Google Index Status v2.6
+name: Google Index Status v2.7
 on: 
   workflow_dispatch:
   schedule:
@@ -128,7 +128,14 @@ jobs:
 
           def extract_google_urls(html, debug_file_path=None):
               os.makedirs('.debug', exist_ok=True)
+              
+              # If no specific debug file path is provided, generate one
+              if debug_file_path is None:
+                  current_timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+                  debug_file_path = f'.debug/serp-status-debug-extract-{current_timestamp}.html'
+              
               save_debug_html(html, debug_file_path)
+              
               soup = BeautifulSoup(html, 'html.parser')
               result_containers = soup.find_all('div', class_='yuRUbf')
               urls = []
@@ -151,7 +158,12 @@ jobs:
               # Replace forward slashes and other problematic characters
               return re.sub(r'[/\\?%*:|"<>]', '_', str(filename))
 
-          def save_debug_html(html, debug_file_path):
+          def save_debug_html(html, debug_file_path=None):
+              if debug_file_path is None:
+                  # Generate a default debug file path if none is provided
+                  current_timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+                  debug_file_path = f'.debug/serp-status-debug-{current_timestamp}.html'
+              
               os.makedirs(os.path.dirname(debug_file_path), exist_ok=True)
               try:
                   with open(debug_file_path, 'w', encoding='utf-8') as f:
