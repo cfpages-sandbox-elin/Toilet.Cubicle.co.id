@@ -1,4 +1,4 @@
-name: Google Index Status v2.3
+name: Google Index Status v2.4
 on: 
   workflow_dispatch:
   schedule:
@@ -118,6 +118,7 @@ jobs:
               return sorted(set(pages))
 
           def extract_google_urls(html, debug_file_path=None):
+              os.makedirs('.debug', exist_ok=True)
               save_debug_html(html, debug_file_path)
               soup = BeautifulSoup(html, 'html.parser')
               result_containers = soup.find_all('div', class_='yuRUbf')
@@ -177,9 +178,9 @@ jobs:
                   for start in search_pages:
                       # Generate debug file path for this page
                       debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
-                      
-                      # Get results for this page
-                      page_html = get_google_results(site_query, num=100, start=start)
+                      print(f"Saving debug file: {debug_filename}")
+                      page_html = get_google_results(site_query, num=100, start=start, debug_file_path=debug_filename)
+
                       if page_html:
                           page_urls = extract_google_urls(page_html, debug_file_path=debug_filename)
                           all_results.extend(page_urls)
@@ -201,8 +202,8 @@ jobs:
                   f.write(f"## Total Indexed Pages: {total_results}\n\n")
                   
                   # Add debug file links
-                  f.write("## Debug Information\n")
                   debug_files = sorted([f for f in os.listdir('.debug') if f.startswith('serp-status-debug')])
+                  f.write("## Debug Information\n")
                   for debug_file in debug_files:
                       f.write(f"- [Debug Page HTML](.debug/{debug_file})\n")
                   
