@@ -1,4 +1,4 @@
-name: Google Index Status v2.7
+name: Google Index Status v2.8
 on: 
   workflow_dispatch:
   schedule:
@@ -23,11 +23,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/gindex.yaml') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/gindex.yaml') }}-${{ hashFiles('**/gindex.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
+        if: steps.cache-python-deps.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 pandas
@@ -178,7 +179,7 @@ jobs:
 
               site_query = f"site:{site_url}"
               all_results = []
-              total_results = 'NA'  # Changed from 'N/A' to avoid filename issues
+              total_results = 'NA'
 
               # Ensure .md and .debug directories exist
               os.makedirs('.md', exist_ok=True)
@@ -191,7 +192,6 @@ jobs:
               first_page_html = get_google_results(site_query, num=10)
               if first_page_html:
                   # Save first page debug file
-                  os.makedirs('.debug', exist_ok=True)
                   first_page_debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page1.html'
                   save_debug_html(first_page_html, first_page_debug_filename)
 
@@ -201,15 +201,16 @@ jobs:
                   search_pages = detect_search_pages(first_page_html)
                   
                   # Collect URLs from all pages
+                  debug_files = [first_page_debug_filename]  # Start with first page debug file
                   for start in search_pages:
                       # Get HTML for the current page
                       page_html = get_google_results(site_query, num=100, start=start)
                       
                       if page_html:
                           # Save debug file for this page
-                          os.makedirs('.debug', exist_ok=True)
                           debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
                           save_debug_html(page_html, debug_filename)
+                          debug_files.append(debug_filename)
                           
                           # Extract URLs
                           page_urls = extract_google_urls(page_html)
@@ -232,10 +233,9 @@ jobs:
                   f.write(f"## Total Indexed Pages: {total_results}\n\n")
                   
                   # Add debug file links
-                  debug_files = sorted([f for f in os.listdir('.debug') if f.startswith('serp-status-debug')])
                   f.write("## Debug Information\n")
-                  for debug_file in debug_files:
-                      f.write(f"- [Debug Page HTML](.debug/{debug_file})\n")
+                  for i, debug_file in enumerate(debug_files, start=1):
+                      f.write(f"- [Debug Page HTML Page {i}]({debug_file})\n")
                   
                   f.write("\n## URL Details\n")
                   f.write("| No. | Original URL | Google Redirect URL |\n")
@@ -258,5 +258,6 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .md/serp-status-*.md
+          git add .debug
           git commit -m 'Update Monthly Google Indexing Status' || echo "No changes to commit"
           git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} HEAD:main
