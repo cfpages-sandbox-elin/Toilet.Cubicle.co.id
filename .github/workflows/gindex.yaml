@@ -1,4 +1,4 @@
-name: Google Index Status v1.9.3
+name: Google Index Status v2.0
 on: 
   workflow_dispatch:
   schedule:
@@ -128,8 +128,13 @@ jobs:
                           pages.append(int(start_param.group(1)))
               return sorted(set(pages))
 
-          def extract_google_urls(html):
+          def extract_google_urls(html, debug_file_path=None):
               soup = BeautifulSoup(html, 'html.parser')
+              
+              # Optional: Save debug HTML if debug file path is provided
+              if debug_file_path:
+                  with open(debug_file_path, 'w', encoding='utf-8') as f:
+                      f.write(html)
               
               # Print some debugging information about the parsed HTML
               print("Parsing HTML...")
@@ -173,12 +178,19 @@ jobs:
               return urls
 
           def main():
-              repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
+              repo_name = os.environ.get('REPO_NAME').lower()
               site_url = f"https://{repo_name}"
 
               site_query = f"site:{site_url}"
               all_results = []
               total_results = 'N/A'
+
+              # Ensure .md and .debug directories exist
+              os.makedirs('.md', exist_ok=True)
+              os.makedirs('.debug', exist_ok=True)
+
+              # Get current timestamp
+              current_timestamp = datetime.now().strftime("%Y%m%d-%H%M")
 
               # Get first page results with num=10 to get the total indexed pages
               first_page_html = get_google_results(site_query, num=10)
@@ -190,24 +202,34 @@ jobs:
                   
                   # Collect URLs from all pages
                   for start in search_pages:
+                      # Generate debug file path for this page
+                      debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
+                      
+                      # Get results for this page
                       page_html = get_google_results(site_query, num=100, start=start)
                       if page_html:
-                          page_urls = extract_google_urls(page_html)
+                          page_urls = extract_google_urls(page_html, debug_file_path=debug_filename)
                           all_results.extend(page_urls)
 
               # Create DataFrame
               df = pd.DataFrame(all_results)
 
-              # Generate output file path
-              os.makedirs('.md', exist_ok=True)
-              current_date = datetime.now().strftime("%Y-%m-%d")
-              filename = f'.md/serp-status-{current_date}.md'
+              # Generate output file path with more descriptive name
+              filename = f'.md/serp-status-{current_timestamp}-{total_results}-{len(all_results)}.md'
 
               # Write results to Markdown
               with open(filename, 'w') as f:
                   f.write(f"# Google Indexing Status for {site_url}\n\n")
                   f.write(f"## Measurement Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                   f.write(f"## Total Indexed Pages: {total_results}\n\n")
+                  
+                  # Add debug file links
+                  f.write("## Debug Information\n")
+                  debug_files = sorted([f for f in os.listdir('.debug') if f.startswith('serp-status-debug')])
+                  for debug_file in debug_files:
+                      f.write(f"- [Debug Page HTML](.debug/{debug_file})\n")
+                  
+                  f.write("\n## URL Details\n")
                   f.write("| No. | Original URL | Google Redirect URL |\n")
                   f.write("|-----|--------------|---------------------|\n")
                   for i, (_, row) in enumerate(df.iterrows(), start=1):
@@ -215,6 +237,7 @@ jobs:
 
               print(f"Total Indexed Pages: {total_results}")
               print(f"Number of URLs found: {len(all_results)}")
+              print(f"Results saved to: {filename}")
 
           if __name__ == "__main__":
               main()

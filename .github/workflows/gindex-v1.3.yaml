@@ -1,0 +1,165 @@
+name: Google Index Status v1.3
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'  # Run on the first day of each month
+
+permissions:
+  contents: write
+
+jobs:
+  check_indexing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pandas
+
+      - name: Check Google Indexing
+        id: google_index
+        env:
+          REPO_NAME: "${{ github.event.repository.name }}"
+        run: |
+          python << EOF
+          import requests
+          from bs4 import BeautifulSoup
+          import pandas as pd
+          import urllib.parse
+          import re
+          import os
+          from datetime import datetime
+
+          def get_google_results(query, num=10, start=0, max_retries=3, retry_delay=5):
+              headers = {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+              }
+              params = {
+                  'q': query,
+                  'num': num,
+                  'start': start
+              }
+              
+              retries = 0
+              while retries < max_retries:
+                  try:
+                      response = requests.get('https://www.google.com/search', params=params, headers=headers)
+                      if response.status_code == 429:  # Too Many Requests
+                          retries += 1
+                          print(f"Rate limit hit, retrying in {retry_delay} seconds...")
+                          import time
+                          time.sleep(retry_delay)
+                          continue
+                      response.raise_for_status()
+                      return response.text
+                  except requests.exceptions.RequestException as e:
+                      retries += 1
+                      if retries >= max_retries:
+                          print(f"Failed to fetch Google results after {max_retries} retries: {e}")
+                          return None
+                      print(f"Error fetching Google results, retrying in {retry_delay} seconds: {e}")
+                      time.sleep(retry_delay)
+
+          def parse_total_results(html):
+              soup = BeautifulSoup(html, 'html.parser')
+              result_stats = soup.find('div', id='result-stats')
+              if result_stats:
+                  match = re.search(r'About\s+([\d,]+)', result_stats.text)
+                  return int(match.group(1).replace(',', '')) if match else 'N/A'
+              return 'N/A'
+
+          def detect_search_pages(html):
+              soup = BeautifulSoup(html, 'html.parser')
+              page_links = soup.find_all('td', class_='NKTSme')
+              pages = []
+              for link in page_links:
+                  a_tag = link.find('a')
+                  if a_tag and 'start' in a_tag.get('href', ''):
+                      start_param = re.search(r'start=(\d+)', a_tag['href'])
+                      if start_param:
+                          pages.append(int(start_param.group(1)))
+              return sorted(set(pages))
+
+          def extract_google_urls(html):
+              soup = BeautifulSoup(html, 'html.parser')
+              urls = []
+              for link in soup.find_all('div', class_='yuRUbf'):
+                  a_tag = link.find('a')
+                  if a_tag:
+                      original_url = a_tag['href']
+                      
+                      # Use the Google redirect URL directly from the search results
+                      google_redirect_url = a_tag.get('data-redirecturl', '')
+                      
+                      # Only add if we have a valid redirect URL
+                      if google_redirect_url:
+                          urls.append({
+                              'original_url': original_url,
+                              'google_redirect_url': google_redirect_url
+                          })
+              return urls
+
+          def main():
+              repo_name = os.environ.get('REPO_NAME', 'toilet.cubicle.co.id').lower()
+              site_url = f"https://{repo_name}"
+
+              site_query = f"site:{site_url}"
+              all_results = []
+              total_results = 'N/A'
+
+              # Get first page results with num=10 to get the total indexed pages
+              first_page_html = get_google_results(site_query, num=10)
+              if first_page_html:
+                  total_results = parse_total_results(first_page_html)
+                  
+                  # Detect available search result pages
+                  search_pages = detect_search_pages(first_page_html)
+                  
+                  # Collect URLs from all pages
+                  for start in search_pages:
+                      page_html = get_google_results(site_query, num=100, start=start)
+                      if page_html:
+                          page_urls = extract_google_urls(page_html)
+                          all_results.extend(page_urls)
+
+              # Create DataFrame
+              df = pd.DataFrame(all_results)
+
+              # Generate output file path
+              os.makedirs('.md', exist_ok=True)
+              current_date = datetime.now().strftime("%Y-%m-%d")
+              filename = f'.md/serp-status-{current_date}.md'
+
+              # Write results to Markdown
+              with open(filename, 'w') as f:
+                  f.write(f"# Google Indexing Status for {site_url}\n\n")
+                  f.write(f"## Measurement Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                  f.write(f"## Total Indexed Pages: {total_results}\n\n")
+                  f.write("| No. | Original URL | Google Redirect URL |\n")
+                  f.write("|-----|--------------|---------------------|\n")
+                  for i, (_, row) in enumerate(df.iterrows(), start=1):
+                      f.write(f"| {i} | {row['original_url']} | {row['google_redirect_url']} |\n")
+
+              print(f"Total Indexed Pages: {total_results}")
+              print(f"Number of URLs found: {len(all_results)}")
+
+          if __name__ == "__main__":
+              main()
+          EOF
+
+      - name: Commit and Push Results
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .md/serp-status-*.md
+          git commit -m 'Update Monthly Google Indexing Status' || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} HEAD:main
