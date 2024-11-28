@@ -1,4 +1,4 @@
-name: Google Index Status v2.2
+name: Google Index Status v2.3
 on: 
   workflow_dispatch:
   schedule:
@@ -39,21 +39,7 @@ jobs:
 
           def get_google_results(query, num=100, start=0, max_retries=3, retry_delay=5):
               headers = {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.114 Safari/537.36',
-                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                  'Accept-Language': 'en-US,en;q=0.9',
-                  'Accept-Encoding': 'gzip, deflate, br',
-                  'Referer': 'https://www.google.com/',
-                  'DNT': '1',
-                  'Connection': 'keep-alive',
-                  'Upgrade-Insecure-Requests': '1',
-                  'Sec-Fetch-Dest': 'document',
-                  'Sec-Fetch-Mode': 'navigate',
-                  'Sec-Fetch-Site': 'same-origin',
-                  'Sec-Fetch-User': '?1',
-                  'Sec-Ch-Ua': '"Chromium";v="126", "Google Chrome";v="126", "Not.A/Brand";v="24"',
-                  'Sec-Ch-Ua-Mobile': '?0',
-                  'Sec-Ch-Ua-Platform': '"Windows"'
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.114 Safari/537.36'
               }
               
               params = {
@@ -113,7 +99,10 @@ jobs:
               result_stats = soup.find('div', id='result-stats')
               if result_stats:
                   match = re.search(r'About\s+([\d,]+)', result_stats.text)
-                  return int(match.group(1).replace(',', '')) if match else 'N/A'
+                  if match:
+                      return int(match.group(1).replace(',', ''))
+              # Fallback logic
+              print("Failed to parse total results.")
               return 'N/A'
 
           def detect_search_pages(html):
@@ -129,60 +118,38 @@ jobs:
               return sorted(set(pages))
 
           def extract_google_urls(html, debug_file_path=None):
-              # Ensure debug directory exists
-              os.makedirs(os.path.dirname(debug_file_path), exist_ok=True)
-              
-              # Always save debug HTML, even if empty
-              if debug_file_path:
-                  try:
-                      with open(debug_file_path, 'w', encoding='utf-8') as f:
-                          f.write(html)
-                      print(f"Debug file saved: {debug_file_path}")
-                  except Exception as e:
-                      print(f"Error saving debug file: {e}")
-              
+              save_debug_html(html, debug_file_path)
               soup = BeautifulSoup(html, 'html.parser')
-              
-              # Look for search result containers
               result_containers = soup.find_all('div', class_='yuRUbf')
-              print(f"Number of result containers found: {len(result_containers)}")
-              
               urls = []
               for link in result_containers:
                   a_tag = link.find('a')
                   if a_tag and 'href' in a_tag.attrs:
                       original_url = a_tag['href']
-                      print(f"Found URL: {original_url}")
-                      
-                      # Try multiple methods to get attributes
-                      ved = a_tag.get('data-ved') or ''
-                      usg = a_tag.get('data-usg') or ''
-                      
-                      print(f"VED attribute: {ved}")
-                      print(f"USG attribute: {usg}")
-                      
-                      # Construct redirect URL
-                      redirect_url = (
+                      ved = a_tag.get('data-ved', '')
+                      usg = a_tag.get('data-usg', '')
+                      google_redirect_url = (
                           f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
                           f"ved={urllib.parse.quote(ved)}&"
                           f"url={urllib.parse.quote(original_url)}&"
                           f"usg={urllib.parse.quote(usg)}"
-                      )
-                      
-                      urls.append({
-                          'original_url': original_url,
-                          'google_redirect_url': redirect_url
-                      })
-              
+                      ) if ved and usg else original_url
+                      urls.append({'original_url': original_url, 'google_redirect_url': google_redirect_url})
               return urls
 
           def sanitize_filename(filename):
-              """
-              Remove or replace characters that are not allowed in filenames
-              """
               # Replace forward slashes and other problematic characters
               return re.sub(r'[/\\?%*:|"<>]', '_', str(filename))
-          
+
+          def save_debug_html(html, debug_file_path):
+              os.makedirs(os.path.dirname(debug_file_path), exist_ok=True)
+              try:
+                  with open(debug_file_path, 'w', encoding='utf-8') as f:
+                      f.write(html)
+                  print(f"Debug file saved: {debug_file_path}")
+              except Exception as e:
+                  print(f"Error saving debug file: {e}")
+
           def main():
               repo_name = os.environ.get('REPO_NAME').lower()
               site_url = f"https://{repo_name}"
