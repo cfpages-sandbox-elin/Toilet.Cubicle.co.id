@@ -1,4 +1,4 @@
-name: Google Index Status v2.4
+name: Google Index Status v2.5
 on: 
   workflow_dispatch:
   schedule:
@@ -153,7 +153,7 @@ jobs:
 
           def main():
               repo_name = os.environ.get('REPO_NAME').lower()
-              site_url = f"https://{repo_name}"
+              site_url = f"{repo_name}"
 
               site_query = f"site:{site_url}"
               all_results = []
@@ -169,6 +169,10 @@ jobs:
               # Get first page results with num=10 to get the total indexed pages
               first_page_html = get_google_results(site_query, num=10)
               if first_page_html:
+                  # Save first page debug file
+                  first_page_debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page1.html'
+                  save_debug_html(first_page_html, first_page_debug_filename)
+
                   total_results = parse_total_results(first_page_html)
                   
                   # Detect available search result pages
@@ -176,13 +180,16 @@ jobs:
                   
                   # Collect URLs from all pages
                   for start in search_pages:
-                      # Generate debug file path for this page
-                      debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
-                      print(f"Saving debug file: {debug_filename}")
-                      page_html = get_google_results(site_query, num=100, start=start, debug_file_path=debug_filename)
-
+                      # Get HTML for the current page
+                      page_html = get_google_results(site_query, num=100, start=start)
+                      
                       if page_html:
-                          page_urls = extract_google_urls(page_html, debug_file_path=debug_filename)
+                          # Save debug file for this page
+                          debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
+                          save_debug_html(page_html, debug_filename)
+                          
+                          # Extract URLs
+                          page_urls = extract_google_urls(page_html)
                           all_results.extend(page_urls)
 
               # Create DataFrame
