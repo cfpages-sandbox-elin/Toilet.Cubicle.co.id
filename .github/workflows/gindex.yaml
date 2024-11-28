@@ -1,4 +1,4 @@
-name: Google Index Status v2.0
+name: Google Index Status v2.1
 on: 
   workflow_dispatch:
   schedule:
@@ -177,13 +177,20 @@ jobs:
               
               return urls
 
+          def sanitize_filename(filename):
+              """
+              Remove or replace characters that are not allowed in filenames
+              """
+              # Replace forward slashes and other problematic characters
+              return re.sub(r'[/\\?%*:|"<>]', '_', str(filename))
+          
           def main():
               repo_name = os.environ.get('REPO_NAME').lower()
               site_url = f"https://{repo_name}"
 
               site_query = f"site:{site_url}"
               all_results = []
-              total_results = 'N/A'
+              total_results = 'NA'  # Changed from 'N/A' to avoid filename issues
 
               # Ensure .md and .debug directories exist
               os.makedirs('.md', exist_ok=True)
@@ -214,8 +221,12 @@ jobs:
               # Create DataFrame
               df = pd.DataFrame(all_results)
 
+              # Sanitize filename components
+              sanitized_total_results = sanitize_filename(total_results)
+              sanitized_url_count = sanitize_filename(len(all_results))
+
               # Generate output file path with more descriptive name
-              filename = f'.md/serp-status-{current_timestamp}-{total_results}-{len(all_results)}.md'
+              filename = f'.md/serp-status-{current_timestamp}-{sanitized_total_results}-{sanitized_url_count}.md'
 
               # Write results to Markdown
               with open(filename, 'w') as f:
