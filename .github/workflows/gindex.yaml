@@ -1,4 +1,4 @@
-name: Google Index Status v2.5
+name: Google Index Status v2.6
 on: 
   workflow_dispatch:
   schedule:
@@ -17,7 +17,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
+      - name: Cache Python dependencies
+        id: cache-python-deps
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/gindex.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -170,6 +179,7 @@ jobs:
               first_page_html = get_google_results(site_query, num=10)
               if first_page_html:
                   # Save first page debug file
+                  os.makedirs('.debug', exist_ok=True)
                   first_page_debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page1.html'
                   save_debug_html(first_page_html, first_page_debug_filename)
 
@@ -185,6 +195,7 @@ jobs:
                       
                       if page_html:
                           # Save debug file for this page
+                          os.makedirs('.debug', exist_ok=True)
                           debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
                           save_debug_html(page_html, debug_filename)
                           
