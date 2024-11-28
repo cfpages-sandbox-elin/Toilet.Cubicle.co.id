@@ -1,4 +1,4 @@
-name: Google Index Status v2.1
+name: Google Index Status v2.2
 on: 
   workflow_dispatch:
   schedule:
@@ -129,20 +129,19 @@ jobs:
               return sorted(set(pages))
 
           def extract_google_urls(html, debug_file_path=None):
-              soup = BeautifulSoup(html, 'html.parser')
+              # Ensure debug directory exists
+              os.makedirs(os.path.dirname(debug_file_path), exist_ok=True)
               
-              # Optional: Save debug HTML if debug file path is provided
+              # Always save debug HTML, even if empty
               if debug_file_path:
-                  with open(debug_file_path, 'w', encoding='utf-8') as f:
-                      f.write(html)
+                  try:
+                      with open(debug_file_path, 'w', encoding='utf-8') as f:
+                          f.write(html)
+                      print(f"Debug file saved: {debug_file_path}")
+                  except Exception as e:
+                      print(f"Error saving debug file: {e}")
               
-              # Print some debugging information about the parsed HTML
-              print("Parsing HTML...")
-              print(f"HTML length: {len(html)} characters")
-              
-              # Check if the HTML contains any expected Google search content
-              title = soup.find('title')
-              print(f"Page Title: {title.text if title else 'No title found'}")
+              soup = BeautifulSoup(html, 'html.parser')
               
               # Look for search result containers
               result_containers = soup.find_all('div', class_='yuRUbf')
@@ -162,7 +161,7 @@ jobs:
                       print(f"VED attribute: {ved}")
                       print(f"USG attribute: {usg}")
                       
-                      # Construct redirect URL (similar to previous version)
+                      # Construct redirect URL
                       redirect_url = (
                           f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
                           f"ved={urllib.parse.quote(ved)}&"
