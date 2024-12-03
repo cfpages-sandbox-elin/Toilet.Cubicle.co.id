@@ -1,4 +1,4 @@
-name: Google Index Status v2.9
+name: Google Index Status v3.0
 on: 
   workflow_dispatch:
   schedule:
@@ -37,7 +37,7 @@ jobs:
           import os
           from datetime import datetime
 
-          def get_google_results(query, num=100, start=0, max_retries=3, retry_delay=5):
+          def get_google_results(query, domain='com', num=100, start=0, max_retries=3, retry_delay=5):
               headers = {
                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.114 Safari/537.36'
               }
@@ -59,13 +59,16 @@ jobs:
               retries = 0
               while retries < max_retries:
                   try:
-                      # Construct and print the full URL for debugging
-                      full_url = requests.Request('GET', 'https://www.google.com/search', params=params).prepare().url
-                      response = requests.get('https://www.google.com/search', params=params, headers=headers)
+                      # Use the specified domain
+                      url = f'https://www.google.{domain}/search'
+                      full_url = requests.Request('GET', url, params=params).prepare().url
+                      
+                      response = requests.get(url, params=params, headers=headers)
                       
                       # Print details for debug
                       print(f"Requesting URL: {full_url}")
                       print(f"Parameters: {params}")
+                      print(f"Domain: {domain}")
                       print(f"Response Status Code: {response.status_code}")
                       print(f"Response Headers: {response.headers}")
                       
@@ -84,15 +87,31 @@ jobs:
                       return response.text
                   
                   except requests.exceptions.RequestException as e:
-                      print(f"Error fetching Google results: {e}")
+                      print(f"Error fetching Google results from {domain}: {e}")
                       retries += 1
                       if retries >= max_retries:
-                          print(f"Failed to fetch Google results after {max_retries} retries")
+                          print(f"Failed to fetch Google results from {domain} after {max_retries} retries")
                           return None
                       print(f"Retrying in {retry_delay} seconds...")
                       time.sleep(retry_delay)
               
               return None
+
+          def merge_url_results(results_com, results_co_id):
+              # Create a dictionary to track unique URLs
+              url_dict = {}
+              
+              # Combine and prioritize results
+              for result in results_com + results_co_id:
+                  url = result['original_url']
+                  
+                  # If URL not in dict or this result has more metadata
+                  if (url not in url_dict or 
+                      (not url_dict[url]['ved'] and result['ved']) or 
+                      (not url_dict[url]['usg'] and result['usg'])):
+                      url_dict[url] = result
+              
+              return list(url_dict.values())
 
           def parse_total_results(html):
               soup = BeautifulSoup(html, 'html.parser')
@@ -117,13 +136,13 @@ jobs:
                           pages.append(int(start_param.group(1)))
               return sorted(set(pages))
 
-          def extract_google_urls(html, debug_file_path=None):
+          def extract_google_urls(html, domain='com', debug_file_path=None):
               os.makedirs('.debug', exist_ok=True)
               
               # If no specific debug file path is provided, generate one
               if debug_file_path is None:
                   current_timestamp = datetime.now().strftime("%Y%m%d-%H%M")
-                  debug_file_path = f'.debug/serp-status-debug-extract-{current_timestamp}.html'
+                  debug_file_path = f'.debug/serp-status-debug-extract-{current_timestamp}-{domain}.html'
               
               save_debug_html(html, debug_file_path)
               
@@ -136,13 +155,22 @@ jobs:
                       original_url = a_tag['href']
                       ved = a_tag.get('data-ved', '')
                       usg = a_tag.get('data-usg', '')
+                      
+                      # Construct redirect URL if possible
                       google_redirect_url = (
-                          f"https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
+                          f"https://www.google.{domain}/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&"
                           f"ved={urllib.parse.quote(ved)}&"
                           f"url={urllib.parse.quote(original_url)}&"
                           f"usg={urllib.parse.quote(usg)}"
                       ) if ved and usg else original_url
-                      urls.append({'original_url': original_url, 'google_redirect_url': google_redirect_url})
+                      
+                      urls.append({
+                          'original_url': original_url, 
+                          'google_redirect_url': google_redirect_url,
+                          'ved': ved,
+                          'usg': usg,
+                          'domain': domain
+                      })
               return urls
 
           def sanitize_filename(filename):
@@ -164,12 +192,9 @@ jobs:
                   print(f"Error saving debug file: {e}")
 
           def main():
-              repo_name = os.environ.get('REPO_NAME').lower()
+              repo_name = os.environ.get('REPO_NAME', '').lower()
               site_url = f"{repo_name}"
-
               site_query = f"site:{site_url}"
-              all_results = []
-              total_results = 'NA'
 
               # Ensure .md and .debug directories exist
               os.makedirs('.md', exist_ok=True)
@@ -178,43 +203,45 @@ jobs:
               # Get current timestamp
               current_timestamp = datetime.now().strftime("%Y%m%d-%H%M")
 
-              # Get first page results with num=10 to get the total indexed pages
-              first_page_html = get_google_results(site_query, num=10)
-              if first_page_html:
-                  # Save first page debug file
-                  first_page_debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page1.html'
-                  save_debug_html(first_page_html, first_page_debug_filename)
+              # Collect results from both domains
+              all_results = []
+              total_results = 'NA'
+              debug_files = []
 
-                  total_results = parse_total_results(first_page_html)
+              # Search on both .com and .co.id
+              for domain in ['com', 'co.id']:
+                  # Get first page results
+                  first_page_html = get_google_results(site_query, domain=domain, num=10)
                   
-                  # Detect available search result pages
-                  search_pages = detect_search_pages(first_page_html)
-                  
-                  # Collect URLs from all pages
-                  debug_files = [first_page_debug_filename]  # Start with first page debug file
-                  for start in search_pages:
-                      # Get HTML for the current page
-                      page_html = get_google_results(site_query, num=100, start=start)
-                      
-                      if page_html:
-                          # Save debug file for this page
-                          debug_filename = f'.debug/serp-status-debug-{current_timestamp}-page{start}.html'
-                          save_debug_html(page_html, debug_filename)
-                          debug_files.append(debug_filename)
-                          
-                          # Extract URLs
-                          page_urls = extract_google_urls(page_html)
-                          all_results.extend(page_urls)
+                  if first_page_html:
+                      # Save first page debug file
+                      first_page_debug_filename = f'.debug/serp-status-debug-{current_timestamp}-{domain}-page1.html'
+                      save_debug_html(first_page_html, first_page_debug_filename)
+                      debug_files.append(first_page_debug_filename)
+
+                      # Update total results (take the larger value)
+                      page_total_results = parse_total_results(first_page_html)
+                      total_results = max(total_results, page_total_results)
+
+                      # Extract URLs from first page
+                      page_urls = extract_google_urls(first_page_html, domain=domain)
+                      all_results.extend(page_urls)
+
+              # Merge and deduplicate results
+              merged_results = merge_url_results(
+                  [r for r in all_results if r['domain'] == 'com'],
+                  [r for r in all_results if r['domain'] == 'co.id']
+              )
 
               # Create DataFrame
-              df = pd.DataFrame(all_results)
+              df = pd.DataFrame(merged_results)
 
               # Sanitize filename components
               sanitized_total_results = sanitize_filename(total_results)
-              sanitized_url_count = sanitize_filename(len(all_results))
+              sanitized_url_count = sanitize_filename(len(merged_results))
 
-              # Generate output file path with more descriptive name
-              filename = f'.md/serp-status-{current_timestamp}-{sanitized_total_results}-{sanitized_url_count}.md'
+              # Generate output file path
+              filename = f'.md/serp-status-{current_timestamp}-total{sanitized_total_results}-urls{sanitized_url_count}.md'
 
               # Write results to Markdown
               with open(filename, 'w') as f:
@@ -228,13 +255,13 @@ jobs:
                       f.write(f"- [Debug Page HTML Page {i}]({debug_file})\n")
                   
                   f.write("\n## URL Details\n")
-                  f.write("| No. | Original URL | Google Redirect URL |\n")
-                  f.write("|-----|--------------|---------------------|\n")
+                  f.write("| No. | Original URL | Google Redirect URL | Domain | VED | USG |\n")
+                  f.write("|-----|--------------|---------------------|--------|-----|-----|\n")
                   for i, (_, row) in enumerate(df.iterrows(), start=1):
-                      f.write(f"| {i} | {row['original_url']} | {row['google_redirect_url']} |\n")
+                      f.write(f"| {i} | {row['original_url']} | {row['google_redirect_url']} | {row['domain']} | {row['ved']} | {row['usg']} |\n")
 
               print(f"Total Indexed Pages: {total_results}")
-              print(f"Number of URLs found: {len(all_results)}")
+              print(f"Number of URLs found: {len(merged_results)}")
               print(f"Results saved to: {filename}")
 
           if __name__ == "__main__":
