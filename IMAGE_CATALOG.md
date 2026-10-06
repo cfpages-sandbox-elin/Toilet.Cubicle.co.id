@@ -18,17 +18,17 @@ Scope: article media planning only. No prose, HTML hydration, sitemap edit, depl
 | Image ID | Repository path | Relative URL | Filename inference |
 |---|---|---|---|
 | LOCAL-001 | `wp-content/uploads/2023/01/bg-cubicle.jpg` | `/wp-content/uploads/2023/01/bg-cubicle.jpg` | bg cubicle |
-| LOCAL-002 | `wp-content/uploads/2023/01/cubicle-standar.jpg` | `/wp-content/uploads/2023/01/cubicle-standar.jpg` | cubicle standar |
+| LOCAL-002 | `wp-content/uploads/2026/10/kubikel-standar-arsitektur-v2.webp` | `/wp-content/uploads/2026/10/kubikel-standar-arsitektur-v2.webp` | cubicle standar |
 | LOCAL-003 | `wp-content/uploads/2023/01/cubicle.png` | `/wp-content/uploads/2023/01/cubicle.png` | cubicle |
 | LOCAL-004 | `wp-content/uploads/2023/01/cubicle-toilet.jpg` | `/wp-content/uploads/2023/01/cubicle-toilet.jpg` | cubicle toilet |
 | LOCAL-005 | `wp-content/uploads/2023/01/cubicle.jpg` | `/wp-content/uploads/2023/01/cubicle.jpg` | cubicle |
 | LOCAL-006 | `wp-content/uploads/2023/01/cubicle-toilet-PVC.jpg` | `/wp-content/uploads/2023/01/cubicle-toilet-PVC.jpg` | cubicle toilet PVC |
 | LOCAL-007 | `wp-content/uploads/2023/01/cubicle-panel.jpg` | `/wp-content/uploads/2023/01/cubicle-panel.jpg` | cubicle panel |
-| LOCAL-008 | `wp-content/uploads/2023/01/cubicle-toilet-single-door.jpg` | `/wp-content/uploads/2023/01/cubicle-toilet-single-door.jpg` | cubicle toilet single door |
-| LOCAL-009 | `wp-content/uploads/2023/01/cubicle-premium.jpg` | `/wp-content/uploads/2023/01/cubicle-premium.jpg` | cubicle premium |
-| LOCAL-010 | `wp-content/uploads/2023/01/cubicle-toilet-type-standar.jpg` | `/wp-content/uploads/2023/01/cubicle-toilet-type-standar.jpg` | cubicle toilet type standar |
-| LOCAL-011 | `wp-content/uploads/2023/01/cubicle-single-door.jpg` | `/wp-content/uploads/2023/01/cubicle-single-door.jpg` | cubicle single door |
-| LOCAL-012 | `wp-content/uploads/2023/01/cubicle-two-tone.jpg` | `/wp-content/uploads/2023/01/cubicle-two-tone.jpg` | cubicle two tone |
+| LOCAL-008 | `wp-content/uploads/2026/10/kubikel-single-door-arsitektur-v3.webp` | `/wp-content/uploads/2026/10/kubikel-single-door-arsitektur-v3.webp` | cubicle toilet single door |
+| LOCAL-009 | `wp-content/uploads/2026/10/kubikel-premium-arsitektur-v2.webp` | `/wp-content/uploads/2026/10/kubikel-premium-arsitektur-v2.webp` | cubicle premium |
+| LOCAL-010 | `wp-content/uploads/2026/10/kubikel-standar-arsitektur-v2.webp` | `/wp-content/uploads/2026/10/kubikel-standar-arsitektur-v2.webp` | cubicle toilet type standar |
+| LOCAL-011 | `wp-content/uploads/2026/10/kubikel-single-door-arsitektur-v3.webp` | `/wp-content/uploads/2026/10/kubikel-single-door-arsitektur-v3.webp` | cubicle single door |
+| LOCAL-012 | `wp-content/uploads/2026/10/kubikel-two-tone-arsitektur-v2.webp` | `/wp-content/uploads/2026/10/kubikel-two-tone-arsitektur-v2.webp` | cubicle two tone |
 | LOCAL-013 | `wp-content/uploads/2023/01/cubicle-kantor.jpg` | `/wp-content/uploads/2023/01/cubicle-kantor.jpg` | cubicle kantor |
 
 ## Approved external image inventory

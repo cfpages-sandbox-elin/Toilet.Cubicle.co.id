@@ -72,7 +72,7 @@ sources:
 - **Image ID:** `LOCAL-009`
 - **Source type:** `local`
 - **Placement:** after the opening has answered the main question, before the first detailed H2
-- **Exact Markdown to insert:** `![Ilustrasi cubicle premium](/wp-content/uploads/2023/01/cubicle-premium.jpg)`
+- **Exact Markdown to insert:** `![Ilustrasi cubicle premium](/wp-content/uploads/2026/10/kubikel-premium-arsitektur-v2.webp)`
 - **Caption/credit:** Aset lokal proyek; jangan klaim sebagai dokumentasi proyek tertentu.
 - **Selection basis:** filename/source metadata identifies `cubicle premium` as relevant content media; no pixels were inspected.
 - **Hard boundary:** do not infer or describe unseen visual details, project ownership, location, people, brands, condition, performance, or outcome.
